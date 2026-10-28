@@ -55,9 +55,11 @@ $$
 \mathrm{slope}_{\deg} = \arctan(g)\,\frac{180}{\pi}
 $$
 
+
 $$
-\mathrm{slope}_{\%} = 100g
+slope_\text{proc} = 100g
 $$
+
 
 - `np.hypot()`, `np.arctan()`, `np.degrees()`
 - wyświetl mapę nachylenia i histogram
