@@ -142,3 +142,45 @@ def dem_hillshade(dem, dx, dy, azimuth=315, altitude=45):
 - sprawdź wyniki przy innej rozdzielczości przestrzennej (`dx`, `dy`)
 
 > Funkcje obliczeniowe zwracają tablice; wyświetlanie i zapis wykonuj osobno.
+
+
+```python
+def dem_reproject(in_file, out_file, crs):
+
+    with rasterio.open(in_file) as src:
+        data = src.read(1)
+
+        # Nowa transformacja i rozmiar rastra
+        transform, width, height = rasterio.warp.calculate_default_transform(
+            src.crs, crs, src.width, src.height, *src.bounds
+        )
+
+        # Metadane nowego rastra
+        profile = src.profile.copy()
+        profile.update(
+            crs=crs,
+            transform=transform,
+            width=width,
+            height=height,
+            count=1
+        )
+
+        # Reprojekcja i zapis
+        with rasterio.open(out_file, "w", **profile) as dst:
+
+            out_data = np.zeros((height, width), dtype=data.dtype)
+
+            rasterio.warp.reproject(
+                data,
+                out_data,
+                src_transform=src.transform,
+                src_crs=src.crs,
+                dst_transform=transform,
+                dst_crs=crs,
+                src_nodata=src.nodata,
+                dst_nodata=src.nodata,
+                resampling=rasterio.warp.Resampling.bilinear
+            )
+            rt.raster_info(out_data)
+            dst.write(out_data, 1)
+```
