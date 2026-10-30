@@ -57,7 +57,7 @@ $$
 
 
 $$
-slope_\text{proc} = 100g
+\mathrm{slope}_\mathrm{proc} = 100g
 $$
 
 
@@ -83,7 +83,7 @@ def dem_slope(dem, dx, dy):
 Dla rastra **north-up**, gdy `g_s` jest pochodną w kierunku południowym:
 
 $$
-\mathrm{aspect} = \bigl(\operatorname{degrees}(\operatorname{atan2}(-g_x,\,g_s)) + 360\bigr)\bmod 360
+\mathrm{aspect} = \bigl(\operatorname{degrees}(\mathrm{atan2}(-g_x,\,g_s)) + 360\bigr)\bmod 360
 $$
 
 - tereny płaskie (`g = 0`) – brak określonej ekspozycji; użyj maski

@@ -75,3 +75,11 @@ with rasterio.open("dem_utm.tif") as src:
 
 dem_show(dem, extent=extent)
 ```
+
+
+Parametr	Zakres	Krok
+x1, y1, x2, y2	0–299	10
+h1, h2	0–120	10
+w1, w2	20–100	5
+offset	0–200	10
+size	300	stały
