@@ -1,26 +1,44 @@
-# DEM – algebra rastrów
+# Algebra rastrów
 
-Ćwiczenia obejmują pełny proces rastrowej analizy terenu: od utworzenia syntetycznego modelu wysokościowego (DEM), przez analizy morfometryczne, po wielokryterialną ocenę przydatności terenu (fuzzy MCDA).
+Ćwiczenia obejmują pełny proces rastrowej analizy terenu: od utworzenia danych syntetycznych, rastrów pochodnyc,
+po wielokryterialną ocenę przydatności terenu (fuzzy MCDA).
 
-**Cel dydaktyczny:** przetwarzanie i analiza rastrów w NumPy, wizualizacja wyników w Matplotlib oraz odczyt i zapis danych georeferencyjnych za pomocą Rasterio. Samodzielne tworzenie funkcji Pythona do ponownego wykorzystania.
+**Cel dydaktyczny:** przetwarzanie i analiza rastrów w NumPy, wizualizacja wyników w Matplotlib oraz odczyt i zapis
+danych georeferencyjnych za pomocą Rasterio. Samodzielne tworzenie funkcji Pythona do ponownego wykorzystania.
 
-## Materiały
+---
 
-- [`01dem_create.md`](01dem_create.md) – generowanie DEM, georeferencja, zapis i odczyt GeoTIFF.
-- [`02analizy1.md`](02analizy1.md) – gradient, nachylenie, ekspozycja, cieniowanie i warstwice.
-- [`03analizy2.md`](03analizy2.md) – reklasyfikacja, funkcje przynależności fuzzy i rastrowa analiza wielokryterialna.
 
-Dokumenty prowadzą przez kolejne etapy ćwiczeń. Szczegółowe polecenia, wzory i zadania znajdują się w odpowiednich plikach.
+# Schemat ogólny laboratorium
 
-## Organizacja pracy
+## Projekt
 
-- Analizy wykonywane są w notebookach Jupyter.
-- Funkcje powstają stopniowo podczas ćwiczeń; po sprawdzeniu trafiają do własnego pakietu `dem_tools`.
-- Pakiet ma układ `src`, konfigurację `pyproject.toml` i jest instalowany w trybie edytowalnym (`pip install -e .`).
-- Podstawowe biblioteki: `NumPy`, `Matplotlib`, `Rasterio`, `ipywidgets`.
+1. Python:
+  - nowy pakiet: `dem_tools`
+  - układ `src`
+  - `pyproject.toml`
 
-## Dane
+2. Jupyter:
+  - instalacja zależności w środowisku używanego kernela: numpy, matplotlib, rasterio, ipywidgets, scikit-image
+  - scikit-image: `python -m pip install -U scikit-image`
+  - instalacja (editable mode) pakietów `raster_tools`, `dem_tools`
 
-- DEM i warstwy wykorzystywane w analizach są syntetyczne.
-- Sztuczna georeferencja umożliwia pracę z danymi przestrzennymi w metrach.
-- Wartości i progi analizy przydatności są założeniami dydaktycznymi, a nie oceną rzeczywistych lokalizacji.
+
+## Przygotowanie danych
+
+1. Utowrzenie generatora sztucznego `DEM`:
+  - wygenerowanie DEM
+
+4. Wygenerowanie rastrów pokrycia terenu:
+  - drogi, linie energetyczne, mapa pokrycia terenu
+
+5. Zapis rastrów do plik `.tif`:
+  - jeden raster z wieloma kanałami: DEM, drogi, linie en., mapa pokrycia terenu
+  - nadanie georeferencji i zapis na dysk
+
+
+## Analizy
+
+  1. Generowanie mapy nachyleń i azymutów (aspect)
+  2. Reklasyfikacja, kryteria wyboru lokalizacji
+

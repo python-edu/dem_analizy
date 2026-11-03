@@ -1,37 +1,211 @@
-# Temat
+# Raster Analysis
 
-> Analizy morfometryczne syntetycznego DEM
+> Symulacja wyboru lokalizacji dla inwestycji np farma fotowoltaiczna
+
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A["Input raster: DEM, roads, power_lines, landcover"]
+    A --> B["Read raster bands"]
+
+    B --> DEM["DEM"]
+    B --> R["Roads"]
+    B --> P["Power lines"]
+    B --> L["Land cover"]
+
+    DEM --> D["Generate slope and aspect"]
+    D --> DS["Reclassify slope"]
+    D --> DA["Reclassify aspect"]
+
+    R --> RD["Calculate road distances"]
+    RD --> RC["Reclassify road distances"]
+
+    P --> PD["Calculate power line distances"]
+    PD --> PC["Reclassify power line distances"]
+
+    L --> LC["Reclassify land cover"]
+
+    DS --> M["Map algebra"]
+    DA --> M
+    RC --> M
+    PC --> M
+    LC --> M
+
+    M --> OUT["Final suitability map"]
+```
 
 ---
 
-# Odczyt DEM
+# Odczyt rastra 
 
-- otwórz `dem_utm.tif` za pomocą `rasterio`
-- odczytaj pierwszy kanał do tablicy NumPy
-- pobierz `crs`, `transform`, `res`, `bounds`
-- wyznacz `extent` za pomocą `plotting_extent()`
-- wyświetl DEM funkcją `dem_show()` z modułu `dem_tools`
-- zapisz rozdzielczość: `dx`, `dy` [m/piksel]
+- otwórz zapisany raster, użyj funkcji z pakietu `dem_tools`
+- rozpakuj tablicę do osobnych tablic: DEM, roads, pow_line, landcover
+- ustaw odpwiedni typ danych dla każdego rastra: `float32`, `uint8`
+- odczytaj i zapisz rozdzielczość: `dx`, `dy` [m/piksel]
 
-> Do obliczeń pochodnych używaj rozdzielczości w metrach, nie numerów pikseli.
 
 ---
 
-# Gradient wysokości
+# Rastry pochodne
+
+Wygeneruj rastry: slope i azymut. Użyj funkcji z `dem_tools`.
+
+*Uwaga*:
+ - jeśli w twoim module nie ma odpowiednich funkcji - utwórz je
+ - wzory znajdują się w ostatnim punkcie dokumentu
+
+
+ ---
+
+#  Slope, aspect - reklasyfikacja
+
+Wykonaj analizę rastrową na `slope` i `asp` (aspect):
+- używając ipywidgets dobierz wartość kryterium do reklasyfikacji
+- utwórz rastry po reklasyfikacji: `slope_class` i `asp_class`
+
+---
+
+
+# roads, power_lines - mapy odległości
+
+Wygeneruj nowe rastry:
+- `roads_dist`, `power_lines_dist`
+- każdy piksel zawiera odległość do najbliżeszej drogi / linii energetycznej
+
+## Obliczanie odległości
+
+- odlełość pomiędzy pikselami:
+  $$ d = \sqrt{(row_1 - row_2)^2 + (col_1 - col_2)^2} $$
+- odlełość pomiędzy pikselami w [m]:
+  $$ d = \sqrt{((row_1 - row_2)\cdot dy)^2 + ((col_1 - col_2)\cdot dx)^2} $$
+- zaimplementuj podstawowy algorytm oblicznia odległości dla każdego piksela
+- schemat implementacji
+
+```python
+  def distance_to_nearest(ar, dx=1, dy=1):
+      # wyznacz lokalizację obiektu (where())
+      # wyznacz siatkę współrzędnych `np.indices()`
+
+      # for loop:
+      #   iteruj po lokalizacji i licz odległości 
+      #   zapisz najmniejsze `np.minimum()`
+      
+```
+
+
+## Reklasyfikacja
+
+Interaktywnie ustal minimalną odległość od dróg i linii. Wykonaj reklasyfikację:
+- roads_dist -> `roads_class`
+- power_lines_dist -> `power_lines_class`
+
+---
+
+
+# Mapa pokrycia terenu - reklasyfikacja
+
+Zdecyduj jakie tereny (pokrycia) przeznaczone zostaną pod inwestycję:
+- wykonaj reklasyfikację rastra `landcover`:
+  - `0` tereny nieprzydatne, `1` tereny przydatne
+- utwórz nowy raster `landcover_class` - typ danych `uint8`
+
+---
+
+
+
+# Algebra rastrów (Map Algebra)
+
+## Wstęp
+
+>- **Algebra rastrów**: wykonywanie operacji matematycznych i logicznych na odpowiadających sobie pikselach różnych rastrów.
+>- dla rastrów binarnych (`0`, `1`), gdzie `1` oznacza spełnienie warunku, można stosować:
+
+| Operacja | NumPy | Znaczenie |
+|---|---|---|
+| Iloczyn logiczny (AND) | `a & b` | Oba warunki spełnione |
+| Suma logiczna (OR) | `a \| b` | Co najmniej jeden warunek spełniony |
+| Negacja (NOT) | `~a` | Odwrócenie warunku |
+| Suma arytmetyczna | `a + b` | Liczba spełnionych warunków |
+
+**Suma logiczna (OR) nie jest tym samym co suma arytmetyczna (+).**
+
+| a | b | AND (`&`) | OR (`\|`) | Suma (`+`) |
+|---|---|---|---|---|
+| 0 | 0 | 0 | 0 | 0 |
+| 0 | 1 | 0 | 1 | 1 |
+| 1 | 0 | 0 | 1 | 1 |
+| 1 | 1 | 1 | 1 | 2 |
+
+Rastry muszą mieć identyczne wymiary i zgodne siatki przestrzenne.
+
+
+**Uwaga:** negację `~` stosujemy tutaj do tablic logicznych `bool`. Dla `uint8` operator ten odwraca bity, więc `~0` nie daje `1`.
+
+
+## Przykład
+
+```python
+a = np.array([
+    [1, 0, 1],
+    [0, 1, 1],
+    [1, 0, 0]
+], dtype=np.uint8)
+
+b = np.array([
+    [1, 1, 0],
+    [0, 1, 0],
+    [1, 1, 0]
+], dtype=np.uint8)
+
+
+a * b
+a & b
+a | b
+a + b
+```
+
+## Analiza
+
+Wykonaj i wyświetl wyniki operacji `or` i `and` dla wszytskich rastrów po reklasyfikacji.
+
+
+---
+---
+
+# Wzory
+
+
+## Gradient wysokości
 
 - gradient – zmiana wysokości w kierunkach X i Y
 - `np.gradient()` – pochodne obliczane numerycznie
 - kolejność wyników dla rastra 2D: **wiersze, kolumny**
 
+
+
+### 1. Gradient w kierunku Y (wiersze)
+
 $$
-g_s = \frac{\partial z}{\partial s},\qquad
- g_x = \frac{\partial z}{\partial x}
+g_y = \frac{z_{i+1,j} - z_{i-1,j}}{2\,dy}
 $$
 
-- `x` – kierunek na wschód
-- `s` – kierunek w dół tablicy (na południe dla rastra north-up)
-- `np.gradient(dem, dy, dx)` → `g_s, g_x`
-- wyświetl obie składowe gradientu
+### 2. Gradient w kierunku X (kolumny)
+
+$$
+g_x = \frac{z_{i,j+1} - z_{i,j-1}}{2\,dx}
+$$
+
+gdzie:
+  - $z_{i,j}$ — wysokość w pikselu o indeksach `(i, j)`,
+  - $dx$ — wielkość piksela w kierunku kolumn,
+  - $dy$ — wielkość piksela w kierunku wierszy.
+
+
+```python
+gy, gx = np.gradient(dem, dy, dx)
+```
 
 Funkcja do `dem_tools.py`:
 
@@ -40,24 +214,44 @@ def dem_gradient(dem, dx, dy):
     pass
 ```
 
+
 ---
 
-# Nachylenie terenu – slope
+
+## Nachylenie terenu – slope
 
 - oblicz nachylenie na podstawie składowych gradientu
 - porównaj wartości w stopniach i procentach
 
-$$
-g = \sqrt{g_x^2 + g_s^2}
-$$
+
+### 1. Wielkość gradientu
 
 $$
-\mathrm{slope}_{\deg} = \arctan(g)\,\frac{180}{\pi}
+g = \sqrt{g_x^2 + g_y^2}
 $$
 
+```python
+g = np.hypot(gx, gy)
+```
+
+### 2. Slope
 
 $$
-\mathrm{slope}_\mathrm{proc} = 100g
+slope = \arctan(g) \cdot \frac{180}{\pi}
+$$
+
+```python
+slope = np.degrees(np.arctan(g))
+```
+
+Wynik w stopniach, od 0° do 90°.
+
+
+
+
+
+$$
+\mathrm{slope}_{\%} = 100 \cdot g 
 $$
 
 
@@ -74,20 +268,34 @@ def dem_slope(dem, dx, dy):
 
 ---
 
-# Ekspozycja terenu – aspect
+
+## Ekspozycja terenu – aspect
 
 - aspect – azymut kierunku **największego spadku** terenu
 - azymut: `0°` – N, `90°` – E, `180°` – S, `270°` – W
 - `np.arctan2()` – wyznaczanie kąta z dwóch składowych gradientu
 
-Dla rastra **north-up**, gdy `g_s` jest pochodną w kierunku południowym:
+
 
 $$
-\mathrm{aspect} = \bigl(\mathrm{degrees}(\mathrm{atan2}(-g_x,\,g_s)) + 360\bigr)\bmod 360
+aspect = \mathrm{atan2}(-g_x, g_y) \cdot \frac{180}{\pi}
 $$
 
-- tereny płaskie (`g = 0`) – brak określonej ekspozycji; użyj maski
-- wyświetl mapę ekspozycji (skala barw dla kierunków)
+Normalizacja do zakresu 0–360°:
+
+$$
+aspect = (aspect + 360) \bmod 360
+$$
+
+```python
+aspect = np.degrees(np.arctan2(-gx, gy))
+aspect = (aspect + 360) % 360
+```
+
+
+> Na płaskim terenie (`g = 0`) ekspozycja jest niezdefiniowana.
+
+
 
 Funkcja do `dem_tools.py` (wynik w stopniach):
 
@@ -98,7 +306,7 @@ def dem_aspect(dem, dx, dy):
 
 ---
 
-# Cieniowanie – hillshade
+## Cieniowanie – hillshade
 
 - symulacja oświetlenia powierzchni DEM
 - `matplotlib.colors.LightSource`
@@ -118,7 +326,7 @@ def dem_hillshade(dem, dx, dy, azimuth=315, altitude=45):
 
 ---
 
-# Warstwice – contours
+## Warstwice – contours
 
 - warstwice – linie jednakowej wysokości
 - `plt.contour()` – rysowanie izolinii
@@ -133,54 +341,3 @@ def dem_hillshade(dem, dx, dy, azimuth=315, altitude=45):
 
 ---
 
-# Moduł `dem_tools.py`
-
-- dodaj: `dem_gradient()`, `dem_slope()`, `dem_aspect()`, `dem_hillshade()`
-- wykorzystaj istniejące: `dem_show()`, `save_dem()`
-- rozszerz `dem_show()` o opcjonalną mapę barw (`cmap`) i opis skali (`label`)
-- przetestuj funkcje na DEM z notebooka 1
-- sprawdź wyniki przy innej rozdzielczości przestrzennej (`dx`, `dy`)
-
-> Funkcje obliczeniowe zwracają tablice; wyświetlanie i zapis wykonuj osobno.
-
-
-```python
-def dem_reproject(in_file, out_file, crs):
-
-    with rasterio.open(in_file) as src:
-        data = src.read(1)
-
-        # Nowa transformacja i rozmiar rastra
-        transform, width, height = rasterio.warp.calculate_default_transform(
-            src.crs, crs, src.width, src.height, *src.bounds
-        )
-
-        # Metadane nowego rastra
-        profile = src.profile.copy()
-        profile.update(
-            crs=crs,
-            transform=transform,
-            width=width,
-            height=height,
-            count=1
-        )
-
-        # Reprojekcja i zapis
-        with rasterio.open(out_file, "w", **profile) as dst:
-
-            out_data = np.zeros((height, width), dtype=data.dtype)
-
-            rasterio.warp.reproject(
-                data,
-                out_data,
-                src_transform=src.transform,
-                src_crs=src.crs,
-                dst_transform=transform,
-                dst_crs=crs,
-                src_nodata=src.nodata,
-                dst_nodata=src.nodata,
-                resampling=rasterio.warp.Resampling.bilinear
-            )
-            rt.raster_info(out_data)
-            dst.write(out_data, 1)
-```
